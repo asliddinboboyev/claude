@@ -1172,7 +1172,7 @@ function addMsg(text, role) {
   av.textContent = role === "user" ? "Siz" : "AI";
   var bubble = document.createElement("div");
   bubble.className = "bubble";
-  bubble.innerHTML = escapeHtml(text).split("\n").join("<br>");
+  bubble.innerHTML = escapeHtml(text).split(String.fromCharCode(10)).join("<br>");
   row.appendChild(av);
   row.appendChild(bubble);
   msgs.appendChild(row);
