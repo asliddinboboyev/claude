@@ -553,7 +553,7 @@ _PATTERNS = {
     "side_effect": [r"nojo['\u2019]?ya", r"ko['\u2019]?ngil\s*ayn", r"bosh\s*ayl", r"toshma", r"nausea", r"dizzy", r"побоч"],
     "cost": [r"qimmat", r"pulim\s*yetmay", r"sotib\s*ololmay", r"afford", r"дорого"],
     "confusion": [r"qachon\s*ich", r"qanday\s*ich", r"chalkash", r"confused", r"когда\s*принимать"],
-    "critical_med": [r"insulin", r"tutqanoq", r"epilep", r"warfarin", r"\btb\b", r"sil\b", r"\bhiv\b", r"nitrogliterin", r"prednizolon"],
+    "critical_med": [r"insulin", r"tutqanoq", r"epilep", r"warfarin", r"tb", r"sil", r"hiv", r"nitrogliterin", r"prednizolon"],
     "double_dose": [r"ikki\s*baravar", r"2\s*ta\s*ichdim", r"double\s*dose", r"двойную\s*доз"],
     "pregnancy": [r"homilador", r"emiz", r"pregnan", r"беремен"],
 }
@@ -1117,46 +1117,135 @@ Qanday savol bor?</div></div>
   </div>
 </div>
 <script>
-let apiKey='', sessionId=localStorage.getItem('tabib_sid')||null;
-const $ = id => document.getElementById(id);
-$('launcher').onclick=()=>{$('chat').classList.toggle('open');if($('chat').classList.contains('open')&&apiKey)$('msgInput').focus()};
-$('closeBtn').onclick=()=>$('chat').classList.remove('open');
-document.querySelectorAll('.chip').forEach(b=>{b.onclick=()=>{$('msgInput').value=b.dataset.q;$('msgInput').focus()}});
-function startChat(){
-  const k=$('apiKeyInput').value.trim();
-  if(!k.startsWith('sk-ant')){alert("Notogri kalit formati. sk-ant- bilan boshlanishi kerak");return}
-  apiKey=k;$('keySetup').style.display='none';$('chatMain').style.display='flex';$('msgInput').focus()
-}
-function addMsg(text,role){
-  const row=document.createElement('div');row.className='msg '+(role==='user'?'user':'ai');
-  row.innerHTML=`<div class="av ${role==='user'?'user-av':'ai-av'}">${role==='user'?'Siz':'AI'}</div><div class="bubble">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`;
-  $('msgs').appendChild(row);$('msgs').scrollTop=$('msgs').scrollHeight
-}
-function showTyping(){
-  const d=document.createElement('div');d.className='msg ai';d.id='typing';
-  d.innerHTML='<div class="av ai-av">AI</div><div class="typing"><span></span><span></span><span></span></div>';
-  $('msgs').appendChild(d);$('msgs').scrollTop=$('msgs').scrollHeight
-}
-function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px'}
-$('msgInput').addEventListener('input',()=>autoResize($('msgInput')));
-$('msgInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('chatForm').requestSubmit()}});
-$('chatForm').onsubmit=async e=>{
-  e.preventDefault();
-  const text=$('msgInput').value.trim();if(!text)return;
-  addMsg(text,'user');$('msgInput').value='';autoResize($('msgInput'));$('sendBtn').disabled=true;
-  showTyping();
-  try{
-    const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,session_id:sessionId})});
-    const data=await res.json();
-    document.getElementById('typing')?.remove();
-    if(!res.ok)throw new Error(data.detail||'Server error');
-    sessionId=data.session_id;localStorage.setItem('tabib_sid',sessionId);
-    const rb=$('riskBar');rb.className='risk-bar '+data.risk_level;
-    rb.textContent='Risk: '+data.risk_level+(data.risk_flags.length?' | '+data.risk_flags.join(', '):'');
-    addMsg(data.reply,'ai');
-  }catch(err){document.getElementById('typing')?.remove();addMsg('Xatolik: '+err.message,'ai')}
-  finally{$('sendBtn').disabled=false;$('msgInput').focus()}
+var apiKey = "";
+var sessionId = localStorage.getItem("tabib_sid") || null;
+
+document.getElementById("launcher").onclick = function() {
+  var chat = document.getElementById("chat");
+  if (chat.classList.contains("open")) {
+    chat.classList.remove("open");
+  } else {
+    chat.classList.add("open");
+    if (apiKey) document.getElementById("msgInput").focus();
+  }
 };
+
+document.getElementById("closeBtn").onclick = function() {
+  document.getElementById("chat").classList.remove("open");
+};
+
+document.querySelectorAll(".chip").forEach(function(b) {
+  b.onclick = function() {
+    document.getElementById("msgInput").value = b.dataset.q;
+    document.getElementById("msgInput").focus();
+  };
+});
+
+function startChat() {
+  var k = document.getElementById("apiKeyInput").value.trim();
+  if (!k.startsWith("sk-ant")) {
+    alert("Notogri kalit! sk-ant- bilan boshlanishi kerak");
+    return;
+  }
+  apiKey = k;
+  document.getElementById("keySetup").style.display = "none";
+  var cm = document.getElementById("chatMain");
+  cm.style.display = "flex";
+  cm.style.flexDirection = "column";
+  cm.style.flex = "1";
+  cm.style.overflow = "hidden";
+  document.getElementById("msgInput").focus();
+}
+
+function escapeHtml(text) {
+  var d = document.createElement("div");
+  d.appendChild(document.createTextNode(text));
+  return d.innerHTML;
+}
+
+function addMsg(text, role) {
+  var msgs = document.getElementById("msgs");
+  var row = document.createElement("div");
+  row.className = "msg " + (role === "user" ? "user" : "ai");
+  var av = document.createElement("div");
+  av.className = "av " + (role === "user" ? "user-av" : "ai-av");
+  av.textContent = role === "user" ? "Siz" : "AI";
+  var bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.innerHTML = escapeHtml(text).split("\n").join("<br>");
+  row.appendChild(av);
+  row.appendChild(bubble);
+  msgs.appendChild(row);
+  msgs.scrollTop = 99999;
+}
+
+function showTyping() {
+  var msgs = document.getElementById("msgs");
+  var d = document.createElement("div");
+  d.className = "msg ai";
+  d.id = "typing";
+  var av = document.createElement("div");
+  av.className = "av ai-av";
+  av.textContent = "AI";
+  var typing = document.createElement("div");
+  typing.className = "typing";
+  typing.innerHTML = "<span></span><span></span><span></span>";
+  d.appendChild(av);
+  d.appendChild(typing);
+  msgs.appendChild(d);
+  msgs.scrollTop = 99999;
+}
+
+function autoResize(el) {
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, 100) + "px";
+}
+
+document.getElementById("msgInput").addEventListener("input", function() {
+  autoResize(this);
+});
+
+document.getElementById("msgInput").addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById("chatForm").dispatchEvent(new Event("submit", {bubbles: true}));
+  }
+});
+
+document.getElementById("chatForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  var input = document.getElementById("msgInput");
+  var text = input.value.trim();
+  if (!text || !apiKey) return;
+  addMsg(text, "user");
+  input.value = "";
+  autoResize(input);
+  document.getElementById("sendBtn").disabled = true;
+  showTyping();
+  try {
+    var res = await fetch("/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message: text, session_id: sessionId})
+    });
+    var data = await res.json();
+    var t = document.getElementById("typing");
+    if (t) t.parentNode.removeChild(t);
+    if (!res.ok) throw new Error(data.detail || "Server error");
+    sessionId = data.session_id;
+    localStorage.setItem("tabib_sid", sessionId);
+    var rb = document.getElementById("riskBar");
+    rb.className = "risk-bar " + data.risk_level;
+    rb.textContent = "Risk: " + data.risk_level + (data.risk_flags.length ? " | " + data.risk_flags.join(", ") : "");
+    addMsg(data.reply, "ai");
+  } catch(err) {
+    var t = document.getElementById("typing");
+    if (t) t.parentNode.removeChild(t);
+    addMsg("Xatolik: " + err.message, "ai");
+  }
+  document.getElementById("sendBtn").disabled = false;
+  document.getElementById("msgInput").focus();
+});
 </script>
 </body>
 </html>"""
